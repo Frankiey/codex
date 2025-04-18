@@ -35,6 +35,11 @@ export const OPENAI_TIMEOUT_MS =
   parseInt(process.env["OPENAI_TIMEOUT_MS"] || "0", 10) || undefined;
 export const OPENAI_BASE_URL = process.env["OPENAI_BASE_URL"] || "";
 export let OPENAI_API_KEY = process.env["OPENAI_API_KEY"] || "";
+// Azure OpenAI Service configuration (optional)
+export const AZURE_OPENAI_ENDPOINT = process.env["AZURE_OPENAI_ENDPOINT"] || "";
+export const AZURE_OPENAI_API_KEY = process.env["AZURE_OPENAI_API_KEY"] || "";
+export const AZURE_OPENAI_API_VERSION = process.env["AZURE_OPENAI_API_VERSION"] || "";
+export const AZURE_OPENAI_DEPLOYMENT_NAME = process.env["AZURE_OPENAI_DEPLOYMENT_NAME"] || "";
 
 export function setApiKey(apiKey: string): void {
   OPENAI_API_KEY = apiKey;

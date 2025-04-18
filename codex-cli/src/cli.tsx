@@ -21,6 +21,11 @@ import {
   loadConfig,
   PRETTY_PRINT,
   INSTRUCTIONS_FILEPATH,
+  // Azure OpenAI Service configuration
+  AZURE_OPENAI_ENDPOINT,
+  AZURE_OPENAI_API_KEY as AZURE_KEY,
+  AZURE_OPENAI_API_VERSION,
+  AZURE_OPENAI_DEPLOYMENT_NAME,
 } from "./utils/config";
 import { createInputItem } from "./utils/input-utils";
 import {
@@ -215,19 +220,33 @@ if (cli.flags.config) {
 }
 
 // ---------------------------------------------------------------------------
-// API key handling
+// API key / Azure OpenAI Service configuration
 // ---------------------------------------------------------------------------
 
+// Detect if Azure OpenAI Service is fully configured
+const azureConfigured = Boolean(
+  AZURE_OPENAI_ENDPOINT &&
+  AZURE_KEY &&
+  AZURE_OPENAI_API_VERSION &&
+  AZURE_OPENAI_DEPLOYMENT_NAME,
+);
+
+// Public OpenAI API key
 const apiKey = process.env["OPENAI_API_KEY"];
 
-if (!apiKey) {
+if (!apiKey && !azureConfigured) {
   // eslint-disable-next-line no-console
   console.error(
-    `\n${chalk.red("Missing OpenAI API key.")}\n\n` +
+    `\n${chalk.red("Missing OpenAI API key or Azure OpenAI configuration.")}\n\n` +
       `Set the environment variable ${chalk.bold("OPENAI_API_KEY")} ` +
-      `and re-run this command.\n` +
-      `You can create a key here: ${chalk.bold(
-        chalk.underline("https://platform.openai.com/account/api-keys"),
+      `or configure Azure OpenAI Service by setting ` +
+      `${chalk.bold(
+        "AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT_NAME",
+      )} and re-run this command.\n` +
+      `For OpenAI keys, you can create one here: ${chalk.bold(
+        chalk.underline(
+          "https://platform.openai.com/account/api-keys",
+        ),
       )}\n`,
   );
   process.exit(1);
@@ -242,14 +261,18 @@ let config = loadConfig(undefined, undefined, {
 });
 
 const prompt = cli.input[0];
-const model = cli.flags.model;
+const flagModel = cli.flags.model;
 const imagePaths = cli.flags.image as Array<string> | undefined;
 
+// If Azure is configured, use the Azure deployment name as the model
+const selectedModel = azureConfigured
+  ? AZURE_OPENAI_DEPLOYMENT_NAME
+  : flagModel ?? config.model;
 config = {
   apiKey,
   ...config,
-  model: model ?? config.model,
   notify: Boolean(cli.flags.notify),
+  model: selectedModel,
 };
 
 if (!(await isModelSupportedForResponses(config.model))) {

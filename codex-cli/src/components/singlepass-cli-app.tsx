@@ -5,7 +5,14 @@ import type { FileOperation } from "../utils/singlepass/file_ops";
 
 import Spinner from "./vendor/ink-spinner"; // Third‑party / vendor components
 import TextInput from "./vendor/ink-text-input";
-import { OPENAI_TIMEOUT_MS, OPENAI_BASE_URL } from "../utils/config";
+import {
+  OPENAI_TIMEOUT_MS,
+  OPENAI_BASE_URL,
+  AZURE_OPENAI_ENDPOINT,
+  AZURE_OPENAI_API_KEY,
+  AZURE_OPENAI_API_VERSION,
+  AZURE_OPENAI_DEPLOYMENT_NAME,
+} from "../utils/config";
 import {
   generateDiffSummary,
   generateEditSummary,
@@ -393,11 +400,25 @@ export function SinglePassApp({
         files,
       });
 
-      const openai = new OpenAI({
-        apiKey: config.apiKey ?? "",
-        baseURL: OPENAI_BASE_URL || undefined,
-        timeout: OPENAI_TIMEOUT_MS,
-      });
+      // Choose between Azure OpenAI Service or public OpenAI
+      const useAzure =
+        AZURE_OPENAI_ENDPOINT &&
+        AZURE_OPENAI_API_KEY &&
+        AZURE_OPENAI_API_VERSION &&
+        AZURE_OPENAI_DEPLOYMENT_NAME;
+      const openai = useAzure
+        ? new OpenAI({
+            apiKey: AZURE_OPENAI_API_KEY,
+            baseURL: AZURE_OPENAI_ENDPOINT,
+            defaultHeaders: { "api-key": AZURE_OPENAI_API_KEY },
+            defaultQuery: { "api-version": AZURE_OPENAI_API_VERSION },
+            ...(OPENAI_TIMEOUT_MS !== undefined ? { timeout: OPENAI_TIMEOUT_MS } : {}),
+          })
+        : new OpenAI({
+            apiKey: config.apiKey ?? "",
+            baseURL: OPENAI_BASE_URL || undefined,
+            timeout: OPENAI_TIMEOUT_MS,
+          });
       const chatResp = await openai.beta.chat.completions.parse({
         model: config.model,
         messages: [

@@ -9,7 +9,14 @@ import type {
 import type { Reasoning } from "openai/resources.mjs";
 
 import { log, isLoggingEnabled } from "./log.js";
-import { OPENAI_BASE_URL, OPENAI_TIMEOUT_MS } from "../config.js";
+import {
+  OPENAI_BASE_URL, 
+  OPENAI_TIMEOUT_MS,
+  AZURE_OPENAI_ENDPOINT,
+  AZURE_OPENAI_API_KEY,
+  AZURE_OPENAI_API_VERSION,
+  AZURE_OPENAI_DEPLOYMENT_NAME,
+} from "../config.js";
 import { parseToolCallArguments } from "../parsers.js";
 import {
   ORIGIN,
@@ -243,22 +250,43 @@ export class AgentLoop {
     // Configure OpenAI client with optional timeout (ms) from environment
     const timeoutMs = OPENAI_TIMEOUT_MS;
     const apiKey = this.config.apiKey ?? process.env["OPENAI_API_KEY"] ?? "";
-    this.oai = new OpenAI({
-      // The OpenAI JS SDK only requires `apiKey` when making requests against
-      // the official API.  When running unit‑tests we stub out all network
-      // calls so an undefined key is perfectly fine.  We therefore only set
-      // the property if we actually have a value to avoid triggering runtime
-      // errors inside the SDK (it validates that `apiKey` is a non‑empty
-      // string when the field is present).
-      ...(apiKey ? { apiKey } : {}),
-      baseURL: OPENAI_BASE_URL,
-      defaultHeaders: {
-        originator: ORIGIN,
-        version: CLI_VERSION,
-        session_id: this.sessionId,
-      },
-      ...(timeoutMs !== undefined ? { timeout: timeoutMs } : {}),
-    });
+    // Determine whether to use Azure OpenAI Service or public OpenAI
+    const useAzure =
+      AZURE_OPENAI_ENDPOINT &&
+      AZURE_OPENAI_API_KEY &&
+      AZURE_OPENAI_API_VERSION &&
+      AZURE_OPENAI_DEPLOYMENT_NAME;
+    if (useAzure) {
+      this.oai = new OpenAI({
+        apiKey: AZURE_OPENAI_API_KEY,
+        baseURL: AZURE_OPENAI_ENDPOINT,
+        defaultHeaders: {
+          originator: ORIGIN,
+          version: CLI_VERSION,
+          session_id: this.sessionId,
+          "api-key": AZURE_OPENAI_API_KEY,
+        },
+        defaultQuery: { "api-version": AZURE_OPENAI_API_VERSION },
+        ...(timeoutMs !== undefined ? { timeout: timeoutMs } : {}),
+      });
+    } else {
+      this.oai = new OpenAI({
+        // The OpenAI JS SDK only requires `apiKey` when making requests against
+        // the official API.  When running unit‑tests we stub out all network
+        // calls so an undefined key is perfectly fine.  We therefore only set
+        // the property if we actually have a value to avoid triggering runtime
+        // errors inside the SDK (it validates that `apiKey` is a non‑empty
+        // string when the field is present).
+        ...(apiKey ? { apiKey } : {}),
+        baseURL: OPENAI_BASE_URL,
+        defaultHeaders: {
+          originator: ORIGIN,
+          version: CLI_VERSION,
+          session_id: this.sessionId,
+        },
+        ...(timeoutMs !== undefined ? { timeout: timeoutMs } : {}),
+      });
+    }
 
     setSessionId(this.sessionId);
     setCurrentModel(this.model);

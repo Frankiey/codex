@@ -1,5 +1,6 @@
 import type { AppConfig } from "./config.js";
 
+import { azureCliTokenProvider } from "./azure-cli-token-provider.js";
 import {
   getBaseUrl,
   getApiKey,
@@ -33,8 +34,10 @@ export function createOpenAIClient(
   }
 
   if (config.provider?.toLowerCase() === "azure") {
+    const apiKey = getApiKey(config.provider);
     return new AzureOpenAI({
-      apiKey: getApiKey(config.provider),
+      apiKey,
+      azureADTokenProvider: apiKey ? undefined : azureCliTokenProvider,
       baseURL: getBaseUrl(config.provider),
       apiVersion: AZURE_OPENAI_API_VERSION,
       timeout: OPENAI_TIMEOUT_MS,

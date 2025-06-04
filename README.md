@@ -468,8 +468,11 @@ For each AI provider, you need to set the corresponding API key in your environm
 export OPENAI_API_KEY="your-api-key-here"
 
 # Azure OpenAI
+# Optionally use an API key
 export AZURE_OPENAI_API_KEY="your-azure-api-key-here"
 export AZURE_OPENAI_API_VERSION="2025-03-01-preview" (Optional)
+# Or authenticate via Azure CLI (run `az login` first)
+# The CLI will automatically use your Azure CLI token if no API key is set.
 
 # OpenRouter
 export OPENROUTER_API_KEY="your-openrouter-key-here"

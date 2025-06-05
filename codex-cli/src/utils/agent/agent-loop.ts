@@ -13,12 +13,13 @@ import type {
 import type { Reasoning } from "openai/resources.mjs";
 
 import { CLI_VERSION } from "../../version.js";
+import { azureCliTokenProvider } from "../azure-cli-token-provider.js";
 import {
-  OPENAI_TIMEOUT_MS,
+  AZURE_OPENAI_API_VERSION,
   OPENAI_ORGANIZATION,
   OPENAI_PROJECT,
+  OPENAI_TIMEOUT_MS,
   getBaseUrl,
-  AZURE_OPENAI_API_VERSION,
 } from "../config.js";
 import { log } from "../logger/log.js";
 import { parseToolCallArguments } from "../parsers.js";
@@ -35,7 +36,6 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import OpenAI, { APIConnectionTimeoutError, AzureOpenAI } from "openai";
-import { azureCliTokenProvider } from "../azure-cli-token-provider.js";
 import os from "os";
 
 // Wait time before retrying after rate limit errors (ms).

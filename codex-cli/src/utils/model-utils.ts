@@ -16,8 +16,15 @@ export const RECOMMENDED_MODELS: Array<string> = ["o4-mini", "o3"];
  * lifetime of the process and the results are cached for subsequent calls.
  */
 async function fetchModels(provider: string): Promise<Array<string>> {
-  // If the user has not configured an API key we cannot retrieve the models.
+  // If the user has not configured an API key we cannot retrieve the models
+  // from providers that do not support alternate authentication. For Azure we
+  // allow running without an API key because authentication may come from the
+  // Azure CLI (via `azureCliTokenProvider`). In this case we simply skip the
+  // model list request and return an empty list.
   if (!getApiKey(provider)) {
+    if (provider.toLowerCase() === "azure") {
+      return [];
+    }
     throw new Error("No API key configured for provider: " + provider);
   }
 

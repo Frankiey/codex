@@ -35,6 +35,7 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import OpenAI, { APIConnectionTimeoutError, AzureOpenAI } from "openai";
+import { azureCliTokenProvider } from "../azure-cli-token-provider.js";
 import os from "os";
 
 // Wait time before retrying after rate limit errors (ms).
@@ -307,6 +308,10 @@ export class AgentLoop {
     // Configure OpenAI client with optional timeout (ms) from environment
     const timeoutMs = OPENAI_TIMEOUT_MS;
     const apiKey = this.config.apiKey ?? process.env["OPENAI_API_KEY"] ?? "";
+    const azureTokenProvider =
+      this.provider.toLowerCase() === "azure" && !apiKey
+        ? azureCliTokenProvider
+        : undefined;
     const baseURL = getBaseUrl(this.provider);
 
     this.oai = new OpenAI({
@@ -334,6 +339,7 @@ export class AgentLoop {
     if (this.provider.toLowerCase() === "azure") {
       this.oai = new AzureOpenAI({
         apiKey,
+        azureADTokenProvider: azureTokenProvider,
         baseURL,
         apiVersion: AZURE_OPENAI_API_VERSION,
         defaultHeaders: {

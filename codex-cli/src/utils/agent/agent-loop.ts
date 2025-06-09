@@ -13,12 +13,14 @@ import type {
 import type { Reasoning } from "openai/resources.mjs";
 
 import { CLI_VERSION } from "../../version.js";
+import { azureCliTokenProvider } from "../azure-cli-token-provider.js";
 import {
-  OPENAI_TIMEOUT_MS,
+  AZURE_OPENAI_API_VERSION,
   OPENAI_ORGANIZATION,
   OPENAI_PROJECT,
+  OPENAI_TIMEOUT_MS,
+  getApiKey,
   getBaseUrl,
-  AZURE_OPENAI_API_VERSION,
 } from "../config.js";
 import { log } from "../logger/log.js";
 import { parseToolCallArguments } from "../parsers.js";
@@ -306,7 +308,11 @@ export class AgentLoop {
     this.sessionId = getSessionId() || randomUUID().replaceAll("-", "");
     // Configure OpenAI client with optional timeout (ms) from environment
     const timeoutMs = OPENAI_TIMEOUT_MS;
-    const apiKey = this.config.apiKey ?? process.env["OPENAI_API_KEY"] ?? "";
+    const apiKey = this.config.apiKey ?? getApiKey(this.provider);
+    const azureTokenProvider =
+      this.provider.toLowerCase() === "azure" && !apiKey
+        ? azureCliTokenProvider
+        : undefined;
     const baseURL = getBaseUrl(this.provider);
 
     this.oai = new OpenAI({
@@ -334,6 +340,7 @@ export class AgentLoop {
     if (this.provider.toLowerCase() === "azure") {
       this.oai = new AzureOpenAI({
         apiKey,
+        azureADTokenProvider: azureTokenProvider,
         baseURL,
         apiVersion: AZURE_OPENAI_API_VERSION,
         defaultHeaders: {
